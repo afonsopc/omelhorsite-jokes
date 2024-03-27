@@ -4,11 +4,11 @@ FROM afonsopc/holy-c as build-holy
 WORKDIR /code
 
 # Copy the holy code
-COPY file.HC ./file.HC
+COPY jokes-database/Main.HC ./file.HC
 
 # Compile the holy code
 RUN hcc ./file.HC
-RUN mv a.out /add-joke
+RUN mv a.out /jokes
 
 FROM ubuntu as execute
 
@@ -17,6 +17,6 @@ RUN apt-get update ; apt-get upgrade -y
 RUN apt-get install -y libsqlite3-dev
 
 # Copy the compiled holy program
-COPY --from=build-holy /add-joke /
+COPY --from=build-holy /jokes /
 
-CMD ["/add-joke"]
+CMD ["/jokes"]
