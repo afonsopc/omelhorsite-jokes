@@ -1,0 +1,9 @@
+version: '3'
+services:
+  jokes:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    # volumes:
+    #   - .:/code
+    # entrypoint: ["sleep", "infinity"]
