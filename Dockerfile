@@ -1,5 +1,5 @@
 FROM oven/bun:1 as bun-base
-FROM afonsopc/holy-c as holy-base
+FROM --platform=linux/amd64 afonsopc/holy-c as holy-base
 
 FROM holy-base AS build-holy
 
@@ -16,15 +16,19 @@ COPY jokes-api/ .
 RUN bun install --frozen-lockfile --production
 
 
-FROM ubuntu as execute
+FROM debian:trixie-slim as execute
 
-ENV JOKES_BINARY "/app/bin/jokes"
+ENV JOKES_BINARY "/app/bin/jokes.sh"
 ENV PORT "3000"
 ENV MAX_STRING_LENGTH "255"
 ENV JOKES_DB_PATH "/app/database/jokes.db"
 
 RUN apt-get update ; apt-get upgrade -y
-RUN apt-get install -y libsqlite3-dev curl unzip
+RUN apt-get install -y curl unzip
+
+RUN if [ "$(uname -m)" != "x86_64" ]; then \
+      apt-get install -y qemu-user; \
+    fi
 
 # Install bun
 RUN useradd -m user
@@ -49,6 +53,18 @@ COPY --from=build-holy /jokes /app/bin/jokes
 COPY --from=bun-build /code/node_modules /app/api/node_modules
 COPY --from=bun-build /code/src/ /app/api/src/
 COPY --from=bun-build /code/package.json /app/api/package.json
+
+# Create the script to use the jokes binary emulated or if it is x86_64 use the binary
+RUN echo "#!/bin/bash" > /app/bin/jokes.sh
+RUN echo "if [ \"\$(uname -m)\" != \"x86_64\" ]; then" >> /app/bin/jokes.sh
+RUN echo "  qemu-amd64 -L /lib64 /app/bin/jokes" >> /app/bin/jokes.sh
+RUN echo "else" >> /app/bin/jokes.sh
+RUN echo "  /app/bin/jokes" >> /app/bin/jokes.sh
+RUN echo "fi" >> /app/bin/jokes.sh
+RUN chmod +x /app/bin/jokes.sh
+
+# Copy the lib64 directory
+COPY jokes-manager/lib64 /lib64
 
 WORKDIR /app/api
 

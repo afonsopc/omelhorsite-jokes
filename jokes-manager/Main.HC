@@ -4,7 +4,7 @@ U0 Panic(U8 *fmt,...) {
   U8 *msg = StrPrintJoin(NULL,fmt,argc,argv);
   "%s\n", msg;
   Free(msg);
-  Exit;
+  Exit(1);
 }
 
 U0 PrintAboutSection(I32 argc, U8 **argv) {
@@ -19,6 +19,9 @@ U0 PrintAboutSection(I32 argc, U8 **argv) {
   "   %s <db_path> add <lang> <joke>\n", argv[0];
   "   %s <db_path> getall\n", argv[0];
   "   %s <db_path> delete <lang> <joke>\n", argv[0];
+  "   %s <db_path> deleteall\n", argv[0];
+  "   %s <db_path> createdb\n", argv[0];
+  "   %s <db_path> healthcheck\n", argv[0];
   "   %s <db_path> help\n", argv[0];
   "   %s <db_path> about\n", argv[0];
   "\n";
@@ -32,6 +35,9 @@ U0 PrintHelpSection(I32 argc, U8 **argv) {
   "   %s <db_path> add <lang> <joke>\n", argv[0];
   "   %s <db_path> getall\n", argv[0];
   "   %s <db_path> delete <lang> <joke>\n", argv[0];
+  "   %s <db_path> deleteall\n", argv[0];
+  "   %s <db_path> createdb\n", argv[0];
+  "   %s <db_path> healthcheck\n", argv[0];
   "   %s <db_path> help\n", argv[0];
   "   %s <db_path> about\n", argv[0];
   "\n";
@@ -41,7 +47,17 @@ U8 *GetOperationFromArgs(I32 argc, U8 **argv) {
   if (argc < 3) {
     PrintHelpSection();
     Panic("\nInvalid number of arguments.");
-  } else if (StrCmp(argv[2], "get") != 0 && StrCmp(argv[2], "add") != 0 && StrCmp(argv[2], "getall") != 0 && StrCmp(argv[2], "delete") != 0 && StrCmp(argv[2], "about") != 0 && StrCmp(argv[2], "help") != 0) {
+  } else if (
+    StrCmp(argv[2], "get") != 0 && 
+    StrCmp(argv[2], "add") != 0 && 
+    StrCmp(argv[2], "getall") != 0 && 
+    StrCmp(argv[2], "delete") != 0 && 
+    StrCmp(argv[2], "about") != 0 && 
+    StrCmp(argv[2], "help") != 0 &&
+    StrCmp(argv[2], "deleteall") != 0 &&
+    StrCmp(argv[2], "createdb") != 0 &&
+    StrCmp(argv[2], "healthcheck") != 0
+  ) {
     Panic("Invalid operation: %s\n", argv[2]);
   } else if (StrCmp(argv[2], "add") == 0 && argc < 4) {
     Panic("Usage:\n %s <db_path> add <lang> <joke>", argv[0]);
@@ -161,6 +177,29 @@ U0 DeleteJoke(SqlCtx *ctx, U8 *lang, U8 *joke) {
   "Joke deleted successfully.\n";
 }
 
+U0 DeleteAllJokes(SqlCtx *ctx) {
+  U8 *query = "DELETE FROM jokes;";
+
+  Bool success = SqlQuery(ctx, query);
+  if (!success) Panic("Failed to delete all jokes from database.\n");
+
+  "All jokes deleted successfully.\n";
+}
+
+U0 PrintHealthCheckSection() {
+  "Health check passed.\n\n";
+  "Fernando Farinha - Destino Marcado:\n"
+  " O fado tem não sei quê\n"
+  " Que prende a vida da gente\n"
+  " Um nada que se não vê\n"
+  " Um tudo que a gente sente\n\n"
+  "Joke Manager is healthy.\n";
+}
+
+U0 PrintCreatedDbSection() {
+  "Database created successfully.\n";
+}
+
 U0 Main(I32 argc, U8 **argv) {
   U8 *operation = GetOperationFromArgs(argc, argv);
   U8 *db_path = GetDatabasePathFromArgs(argc, argv);
@@ -182,11 +221,17 @@ U0 Main(I32 argc, U8 **argv) {
     PrintAboutSection(argc, argv);
   } else if (StrCmp(operation, "help") == 0) {
     PrintHelpSection(argc, argv);
+  } else if (StrCmp(operation, "deleteall") == 0) {
+    DeleteAllJokes(ctx);
+  } else if (StrCmp(operation, "createdb") == 0) {
+    PrintCreatedDbSection();
+  } else if (StrCmp(operation, "healthcheck") == 0) {
+    PrintHealthCheckSection();
   } else {
     PrintHelpSection(argc, argv);
     Panic("Invalid operation: %s\n", operation);
   }
 
   SqlCtxRelease(ctx);
-  Exit();
+  Exit(0);
 }
