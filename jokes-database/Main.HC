@@ -114,7 +114,7 @@ U0 PrintAllJokes(SqlCtx *ctx) {
   }
 }
 
-U8 DeleteJoke(SqlCtx *ctx, U8 *lang, U8 *joke) {
+U0 DeleteJoke(SqlCtx *ctx, U8 *lang, U8 *joke) {
   U8 *query = "DELETE FROM jokes WHERE lang = ? AND joke = ?";
   
   SqlParam params[2];
@@ -131,7 +131,7 @@ U8 DeleteJoke(SqlCtx *ctx, U8 *lang, U8 *joke) {
   "Joke deleted successfully.\n";
 }
 
-U8 PrintAboutSection(I32 argc, U8 **argv) {
+U0 PrintAboutSection(I32 argc, U8 **argv) {
   "Jokes Database\n";
   " Version 1.0\n";
   " Author: Afonso Coutinho\n";
@@ -146,7 +146,7 @@ U8 PrintAboutSection(I32 argc, U8 **argv) {
   "   %s <db_path> about\n", argv[0]
 }
 
-U8 PrintHelpSection(I32 argc, U8 **argv) {
+U0 PrintHelpSection(I32 argc, U8 **argv) {
   " Jokes Database\n";
   " Version 1.0\n";
   " Usage:\n";
