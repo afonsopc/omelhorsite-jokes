@@ -1,4 +1,4 @@
-import { Hono } from 'hono'
+import { Context, Hono } from 'hono'
 
 type Joke = {
   lang: string,
@@ -33,6 +33,13 @@ const cleanString = (str: string): string => {
   return cleanStr
 }
 
+const cleanJoke = (joke: Joke): Joke => {
+  return {
+    lang: cleanString(joke.lang),
+    joke: cleanString(joke.joke)
+  }
+}
+
 function isJoke(obj: any): obj is Joke {
   return obj && typeof obj.lang === 'string' && typeof obj.joke === 'string';
 }
@@ -41,14 +48,15 @@ function isJokes(obj: any): obj is Jokes {
   return obj && Array.isArray(obj.jokes) && obj.jokes.every(isJoke);
 }
 
+const runJokesBinary = async (_args: (string | undefined)[]): Promise<ReadableStream<Uint8Array>> => {
+  const args = _args.filter((arg) => arg !== undefined) as string[];
+  const response = Bun.spawn([JOKES_BINARY, JOKES_DB_PATH, ...args]);
+  return response.stdout;
+}
+
 const getJoke = async (preferredLang?: string): Promise<Joke> => {
-  let response;
-  if (preferredLang) {
-    response = Bun.spawn([JOKES_BINARY, JOKES_DB_PATH, "get", preferredLang]);
-  } else {
-    response = Bun.spawn([JOKES_BINARY, JOKES_DB_PATH, "get"]);
-  }
-  const joke: Joke = await new Response(response.stdout).json()
+  const response = runJokesBinary(["get", preferredLang]);
+  const joke: Joke = await new Response(await response).json()
 
   if (isJoke(joke)) {
     return joke;
@@ -58,8 +66,8 @@ const getJoke = async (preferredLang?: string): Promise<Joke> => {
 }
 
 const getAllJokes = async (): Promise<Jokes> => {
-  const response = Bun.spawn([JOKES_BINARY, JOKES_DB_PATH, "getall"]);
-  const joke: Jokes = await new Response(response.stdout).json()
+  const response = runJokesBinary(["getall"]);
+  const joke: Jokes = await new Response(await response).json()
 
   if (isJokes(joke)) {
     return joke;
@@ -68,35 +76,31 @@ const getAllJokes = async (): Promise<Jokes> => {
   }
 }
 
-const addJoke = async (joke: Joke): Promise<void> => {
-  const cleanJoke: Joke = {
-    lang: cleanString(joke.lang),
-    joke: cleanString(joke.joke)
-  }
+const addJoke = async (_joke: Joke): Promise<void> => {
+  const joke: Joke = cleanJoke(_joke);
 
-  Bun.spawn([JOKES_BINARY, JOKES_DB_PATH, "add", `${cleanJoke.lang}`, `${cleanJoke.joke}`]);
+  runJokesBinary(["add", `${joke.lang}`, `${joke.joke}`]);
 }
 
-const deleteJoke = async (joke: Joke): Promise<void> => {
-  const cleanJoke: Joke = {
-    lang: cleanString(joke.lang),
-    joke: cleanString(joke.joke)
-  }
+const deleteJoke = async (_joke: Joke): Promise<void> => {
+  const joke: Joke = cleanJoke(_joke);
 
-  Bun.spawn([JOKES_BINARY, JOKES_DB_PATH, "delete", `${cleanJoke.lang}`, `${cleanJoke.joke}`]);
+  runJokesBinary(["delete", `${joke.lang}`, `${joke.joke}`]);
 }
 
-const getToken = async (header: string): Promise<string> => {
-  return header.substring("Bearer ".length)
-}
+// Middleware for checking if user is an admin
+const checkAdmin = async (c: Context, next: () => Promise<void>) => {
+  const header = c.req.header('Authorization')
+  if (!header) { return c.text('Missing Authorization header', 401) }
 
-const isAdmin = async (token: string): Promise<boolean> => {
+  const token = header.substring("Bearer ".length);
   const response = await fetch(`${ACCOUNTS_SERVICE_URL}/admin`, {
     method: "GET",
     headers: { "Authorization": `Bearer ${token}` }
   })
 
-  return response.status === 200
+  if (response.status !== 200) { return c.text('Access Denied', 401) }
+  await next()
 }
 
 const app = new Hono()
@@ -113,18 +117,7 @@ app.get('/', async (c) => {
   }
 })
 
-app.get('/all', async (c) => {
-  const header = c.req.header('Authorization')
-  if (!header) {
-    return c.text('Missing Authorization header', 401)
-  }
-
-  const token = await getToken(header)
-
-  if (!await isAdmin(token)) {
-    return c.text('Access Denied', 401)
-  }
-
+app.get('/all', checkAdmin, async (c) => {
   try {
     const jokes = await getAllJokes()
     return c.json(jokes, 200)
@@ -135,7 +128,7 @@ app.get('/all', async (c) => {
   }
 })
 
-app.post('/', async (c) => {
+app.post('/', checkAdmin, async (c) => {
   let joke;
   try {
     joke = await c.req.json<Joke>()
@@ -143,17 +136,6 @@ app.post('/', async (c) => {
   catch (e) {
     console.error(e)
     return c.text('Invalid joke format', 400)
-  }
-
-  const header = c.req.header('Authorization')
-  if (!header) {
-    return c.text('Missing Authorization header', 401)
-  }
-
-  const token = await getToken(header)
-
-  if (!await isAdmin(token)) {
-    return c.text('Access Denied', 401)
   }
 
   try {
@@ -166,7 +148,7 @@ app.post('/', async (c) => {
   }
 })
 
-app.delete('/', async (c) => {
+app.delete('/', checkAdmin, async (c) => {
   let joke;
   try {
     joke = await c.req.json<Joke>()
@@ -174,17 +156,6 @@ app.delete('/', async (c) => {
   catch (e) {
     console.error(e)
     return c.text('Invalid joke format', 400)
-  }
-
-  const header = c.req.header('Authorization')
-  if (!header) {
-    return c.text('Missing Authorization header', 401)
-  }
-
-  const token = await getToken(header)
-
-  if (!await isAdmin(token)) {
-    return c.text('Access Denied', 401)
   }
 
   try {
@@ -197,6 +168,4 @@ app.delete('/', async (c) => {
   }
 })
 
-export default {
-  fetch: app.fetch
-}
+export default app
