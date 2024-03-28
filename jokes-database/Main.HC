@@ -1,4 +1,3 @@
-#define DB_NAME ("jokes.db")
 #define SQL_TEXT 3
 
 U0 Panic(U8 *fmt,...) {
@@ -9,11 +8,15 @@ U0 Panic(U8 *fmt,...) {
 }
 
 U8 *GetOperationFromArgs(I32 argc, U8 **argv) {
-  if (argc < 2) Panic("Usage:\n %s get [pref_lang]\n %s add <lang> <joke>\n %s getall\n %s delete <lang> <joke>", argv[0], argv[0], argv[0], argv[0]);
-  if (StrCmp(argv[1], "get") != 0 && StrCmp(argv[1], "add") != 0 && StrCmp(argv[1], "getall") != 0 && StrCmp(argv[1], "delete") != 0) Panic("Invalid operation: %s\n", argv[1]);
-  if (StrCmp(argv[1], "add") == 0 && argc < 4) Panic("Usage:\n %s add <lang> <joke>", argv[0]);
-  if (StrCmp(argv[1], "delete") == 0 && argc < 4) Panic("Usage:\n %s delete <lang> <joke>", argv[0]);
+  if (argc < 3) Panic("Usage:\n %s <db_path> get [pref_lang]\n %s <db_path> add <lang> <joke>\n %s <db_path> getall\n %s <db_path> delete <lang> <joke>", argv[0], argv[0], argv[0], argv[0]);
+  if (StrCmp(argv[2], "get") != 0 && StrCmp(argv[2], "add") != 0 && StrCmp(argv[2], "getall") != 0 && StrCmp(argv[2], "delete") != 0) Panic("Invalid operation: %s\n", argv[2]);
+  if (StrCmp(argv[2], "add") == 0 && argc < 4) Panic("Usage:\n %s <db_path> add <lang> <joke>", argv[0]);
+  if (StrCmp(argv[2], "delete") == 0 && argc < 4) Panic("Usage:\n %s <db_path> delete <lang> <joke>", argv[0]);
 
+  return argv[2];
+}
+
+U8 *GetDatabasePathFromArgs(I32 argc, U8 **argv) {
   return argv[1];
 }
 
@@ -124,20 +127,21 @@ U8 DeleteJoke(SqlCtx *ctx, U8 *lang, U8 *joke) {
 
 U0 Main(I32 argc, U8 **argv) {
   U8 *operation = GetOperationFromArgs(argc, argv);
+  U8 *db_path = GetDatabasePathFromArgs(argc, argv);
 
-  auto ctx = SqlCtxNew(DB_NAME);
-  if (!ctx) Panic("Failed to create database: %s\n", DB_NAME);
+  auto ctx = SqlCtxNew(db_path);
+  if (!ctx) Panic("Failed to create database: %s\n", db_path);
 
   CreateTableJokes(ctx);
 
   if (StrCmp(operation, "add") == 0) {
-    AddJoke(ctx, argv[2], argv[3]);
+    AddJoke(ctx, argv[3], argv[4]);
   } else if (StrCmp(operation, "get") == 0) {
-    PrintRandomJoke(ctx, argv[2]);
+    PrintRandomJoke(ctx, argv[3]);
   } else if (StrCmp(operation, "getall") == 0) {
     PrintAllJokes(ctx);
   } else if (StrCmp(operation, "delete") == 0) {
-    DeleteJoke(ctx, argv[2], argv[3]);
+    DeleteJoke(ctx, argv[3], argv[4]);
   }
 
   SqlCtxRelease(ctx);
