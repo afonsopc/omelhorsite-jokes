@@ -84,7 +84,9 @@ const checkAdmin = async (c: Context, next: () => Promise<void>) => {
 
 const app = new Hono()
 
-app.get("/", async (c) => {
+app.get("/", async (c) => { return c.text("Dizem que o fado desgraça\nO fado de muita gente\nMentira, o fado não passa\nDum fado que qualquer sente", 200) })
+
+app.get("/joke", async (c) => {
   const preferredLang = c.req.query("preferredLang")
   try {
     const joke = await getJoke(preferredLang)
@@ -96,7 +98,7 @@ app.get("/", async (c) => {
   }
 })
 
-app.get("/all", checkAdmin, async (c) => {
+app.get("/jokes", checkAdmin, async (c) => {
   try {
     const jokes = await getAllJokes()
     return c.json(jokes, 200)
@@ -107,7 +109,7 @@ app.get("/all", checkAdmin, async (c) => {
   }
 })
 
-app.post("/", checkAdmin, async (c) => {
+app.post("/joke", checkAdmin, async (c) => {
   let joke;
   try { joke = await c.req.json<Joke>() }
   catch (e) {
@@ -126,7 +128,7 @@ app.post("/", checkAdmin, async (c) => {
   }
 })
 
-app.delete("/", checkAdmin, async (c) => {
+app.delete("/joke", checkAdmin, async (c) => {
   let joke;
   try { joke = await c.req.json<Joke>() }
   catch (e) {
