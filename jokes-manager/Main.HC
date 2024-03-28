@@ -7,10 +7,40 @@ U0 Panic(U8 *fmt,...) {
   Exit;
 }
 
+U0 PrintAboutSection(I32 argc, U8 **argv) {
+  "\nJokes Manager\n";
+  " Version 1.0\n";
+  " Author: Afonso Coutinho\n";
+  " Date: 28/03/2024\n";
+  " Location: Portugal\n";
+  " Description: A simple database manager for storing jokes in multiple languages. Written in the Holy C language using the compiler from https://github.com/Jamesbarford/holyc-lang.\n\n";
+  " Usage:\n";
+  "   %s <db_path> get [pref_lang]\n", argv[0];
+  "   %s <db_path> add <lang> <joke>\n", argv[0];
+  "   %s <db_path> getall\n", argv[0];
+  "   %s <db_path> delete <lang> <joke>\n", argv[0];
+  "   %s <db_path> help\n", argv[0];
+  "   %s <db_path> about\n", argv[0];
+  "\n";
+}
+
+U0 PrintHelpSection(I32 argc, U8 **argv) {
+  "\nJokes Manager\n";
+  " Version 1.0\n\n";
+  " Usage:\n";
+  "   %s <db_path> get [pref_lang]\n", argv[0];
+  "   %s <db_path> add <lang> <joke>\n", argv[0];
+  "   %s <db_path> getall\n", argv[0];
+  "   %s <db_path> delete <lang> <joke>\n", argv[0];
+  "   %s <db_path> help\n", argv[0];
+  "   %s <db_path> about\n", argv[0];
+  "\n";
+}
+
 U8 *GetOperationFromArgs(I32 argc, U8 **argv) {
   if (argc < 3) {
     PrintHelpSection();
-    Panic("Invalid number of arguments.\n");
+    Panic("\nInvalid number of arguments.");
   } else if (StrCmp(argv[2], "get") != 0 && StrCmp(argv[2], "add") != 0 && StrCmp(argv[2], "getall") != 0 && StrCmp(argv[2], "delete") != 0 && StrCmp(argv[2], "about") != 0 && StrCmp(argv[2], "help") != 0) {
     Panic("Invalid operation: %s\n", argv[2]);
   } else if (StrCmp(argv[2], "add") == 0 && argc < 4) {
@@ -129,32 +159,6 @@ U0 DeleteJoke(SqlCtx *ctx, U8 *lang, U8 *joke) {
   if (!success) Panic("Failed to delete joke from database.\n");
 
   "Joke deleted successfully.\n";
-}
-
-U0 PrintAboutSection(I32 argc, U8 **argv) {
-  "Jokes Database\n";
-  " Version 1.0\n";
-  " Author: Afonso Coutinho\n";
-  " Date: 28/03/2024\n";
-  " Location: Portugal\n";
-  " Description: A simple database manager for storing jokes in multiple languages. Written in the Holy C language using the compiler from https://github.com/Jamesbarford/holyc-lang.\n";
-  " Usage:\n";
-  "   %s <db_path> get [pref_lang]\n", argv[0];
-  "   %s <db_path> add <lang> <joke>\n", argv[0];
-  "   %s <db_path> getall\n", argv[0];
-  "   %s <db_path> delete <lang> <joke>\n", argv[0];
-  "   %s <db_path> about\n", argv[0]
-}
-
-U0 PrintHelpSection(I32 argc, U8 **argv) {
-  " Jokes Database\n";
-  " Version 1.0\n";
-  " Usage:\n";
-  "   %s <db_path> get [pref_lang]\n", argv[0];
-  "   %s <db_path> add <lang> <joke>\n", argv[0];
-  "   %s <db_path> getall\n", argv[0];
-  "   %s <db_path> delete <lang> <joke>\n", argv[0];
-  "   %s <db_path> about\n", argv[0];
 }
 
 U0 Main(I32 argc, U8 **argv) {
