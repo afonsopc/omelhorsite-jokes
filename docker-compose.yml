@@ -4,3 +4,14 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    ports:
+      - "3005:3005"
+    environment:
+      - PORT=3005
+      - MAX_STRING_LENGTH=255
+      - ACCOUNTS_SERVICE_URL=http://host.docker.internal:3000
+      - JOKES_DB_PATH=/database/jokes.db
+    volumes:
+      - ./database:/database
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
