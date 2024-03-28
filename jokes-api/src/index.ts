@@ -55,32 +55,16 @@ const getJoke = async (preferredLang?: string): Promise<Joke> => {
   const response = runJokesBinary(["get", preferredLang]);
   const joke: Joke = await new Response(await response).json()
 
-  if (isJoke(joke)) {
-    return joke;
-  } else {
-    throw new Error("Invalid joke format");
-  }
+  if (isJoke(joke)) { return joke }
+  else { throw new Error("Invalid joke format") }
 }
 
 const getAllJokes = async (): Promise<Jokes> => {
   const response = runJokesBinary(["getall"]);
   const joke: Jokes = await new Response(await response).json()
 
-  if (isJokes(joke)) {
-    return joke;
-  } else {
-    throw new Error("Invalid joke format");
-  }
-}
-
-const addJoke = async (_joke: Joke): Promise<void> => {
-  const joke: Joke = cleanJoke(_joke);
-  runJokesBinary(["add", `${joke.lang}`, `${joke.joke}`]);
-}
-
-const deleteJoke = async (_joke: Joke): Promise<void> => {
-  const joke: Joke = cleanJoke(_joke);
-  runJokesBinary(["delete", `${joke.lang}`, `${joke.joke}`]);
+  if (isJokes(joke)) { return joke }
+  else { throw new Error("Invalid joke format") }
 }
 
 // Middleware for checking if user is an admin
@@ -132,7 +116,8 @@ app.post("/", checkAdmin, async (c) => {
   }
 
   try {
-    addJoke(joke)
+    const cleanedJoke: Joke = cleanJoke(joke);
+    runJokesBinary(["add", `${cleanedJoke.lang}`, `${cleanedJoke.joke}`]);
     return c.text("Joke added successfully", 201)
   }
   catch (e) {
@@ -150,7 +135,8 @@ app.delete("/", checkAdmin, async (c) => {
   }
 
   try {
-    deleteJoke(joke)
+    const cleanedJoke: Joke = cleanJoke(joke);
+    runJokesBinary(["delete", `${cleanedJoke.lang}`, `${cleanedJoke.joke}`]);
     return c.text("Joke deleted successfully", 200)
   }
   catch (e) {
