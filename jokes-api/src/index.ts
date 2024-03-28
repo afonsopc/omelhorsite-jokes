@@ -9,9 +9,7 @@ type Jokes = { jokes: Joke[] }
 
 const getEnvironmentVariable = (name: string): string => {
   const value = process.env[name]
-  if (!value) {
-    throw new Error(`${name} is not set`)
-  }
+  if (!value) { throw new Error(`${name} is not set`) }
   return value
 }
 
@@ -22,9 +20,7 @@ const _MAX_STRING_LENGTH = getEnvironmentVariable('MAX_STRING_LENGTH')
 const MAX_STRING_LENGTH = parseInt(_MAX_STRING_LENGTH)
 
 const cleanString = (str: string): string => {
-  if (!str) {
-    return ""
-  }
+  if (!str) { return "" }
   let cleanStr = str.trim()
   if (cleanStr.length > MAX_STRING_LENGTH) {
     cleanStr = cleanStr.substring(0, MAX_STRING_LENGTH)
@@ -130,9 +126,7 @@ app.get('/all', checkAdmin, async (c) => {
 
 app.post('/', checkAdmin, async (c) => {
   let joke;
-  try {
-    joke = await c.req.json<Joke>()
-  }
+  try { joke = await c.req.json<Joke>() }
   catch (e) {
     console.error(e)
     return c.text('Invalid joke format', 400)
@@ -150,9 +144,7 @@ app.post('/', checkAdmin, async (c) => {
 
 app.delete('/', checkAdmin, async (c) => {
   let joke;
-  try {
-    joke = await c.req.json<Joke>()
-  }
+  try { joke = await c.req.json<Joke>() }
   catch (e) {
     console.error(e)
     return c.text('Invalid joke format', 400)
