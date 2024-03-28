@@ -7,7 +7,7 @@ FROM holy-base AS build-holy
 WORKDIR /code
 
 # Copy the holy code
-COPY jokes-database/Main.HC ./file.HC
+COPY jokes-manager/Main.HC ./file.HC
 
 # Compile the holy code
 RUN hcc ./file.HC
