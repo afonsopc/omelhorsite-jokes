@@ -8,10 +8,16 @@ U0 Panic(U8 *fmt,...) {
 }
 
 U8 *GetOperationFromArgs(I32 argc, U8 **argv) {
-  if (argc < 3) Panic("Usage:\n %s <db_path> get [pref_lang]\n %s <db_path> add <lang> <joke>\n %s <db_path> getall\n %s <db_path> delete <lang> <joke>", argv[0], argv[0], argv[0], argv[0]);
-  if (StrCmp(argv[2], "get") != 0 && StrCmp(argv[2], "add") != 0 && StrCmp(argv[2], "getall") != 0 && StrCmp(argv[2], "delete") != 0) Panic("Invalid operation: %s\n", argv[2]);
-  if (StrCmp(argv[2], "add") == 0 && argc < 4) Panic("Usage:\n %s <db_path> add <lang> <joke>", argv[0]);
-  if (StrCmp(argv[2], "delete") == 0 && argc < 4) Panic("Usage:\n %s <db_path> delete <lang> <joke>", argv[0]);
+  if (argc < 3) {
+    PrintHelpSection();
+    Panic("Invalid number of arguments.\n");
+  } else if (StrCmp(argv[2], "get") != 0 && StrCmp(argv[2], "add") != 0 && StrCmp(argv[2], "getall") != 0 && StrCmp(argv[2], "delete") != 0 && StrCmp(argv[2], "about") != 0 && StrCmp(argv[2], "help") != 0) {
+    Panic("Invalid operation: %s\n", argv[2]);
+  } else if (StrCmp(argv[2], "add") == 0 && argc < 4) {
+    Panic("Usage:\n %s <db_path> add <lang> <joke>", argv[0]);
+  } else if (StrCmp(argv[2], "delete") == 0 && argc < 4) {
+    Panic("Usage:\n %s <db_path> delete <lang> <joke>", argv[0]);
+  }
 
   return argv[2];
 }
@@ -125,6 +131,32 @@ U8 DeleteJoke(SqlCtx *ctx, U8 *lang, U8 *joke) {
   "Joke deleted successfully.\n";
 }
 
+U8 PrintAboutSection(I32 argc, U8 **argv) {
+  "Jokes Database\n";
+  " Version 1.0\n";
+  " Author: Afonso Coutinho\n";
+  " Date: 28/03/2024\n";
+  " Location: Portugal\n";
+  " Description: A simple database manager for storing jokes in multiple languages. Written in the Holy C language using the compiler from https://github.com/Jamesbarford/holyc-lang.\n";
+  " Usage:\n";
+  "   %s <db_path> get [pref_lang]\n", argv[0];
+  "   %s <db_path> add <lang> <joke>\n", argv[0];
+  "   %s <db_path> getall\n", argv[0];
+  "   %s <db_path> delete <lang> <joke>\n", argv[0];
+  "   %s <db_path> about\n", argv[0]
+}
+
+U8 PrintHelpSection(I32 argc, U8 **argv) {
+  " Jokes Database\n";
+  " Version 1.0\n";
+  " Usage:\n";
+  "   %s <db_path> get [pref_lang]\n", argv[0];
+  "   %s <db_path> add <lang> <joke>\n", argv[0];
+  "   %s <db_path> getall\n", argv[0];
+  "   %s <db_path> delete <lang> <joke>\n", argv[0];
+  "   %s <db_path> about\n", argv[0];
+}
+
 U0 Main(I32 argc, U8 **argv) {
   U8 *operation = GetOperationFromArgs(argc, argv);
   U8 *db_path = GetDatabasePathFromArgs(argc, argv);
@@ -142,6 +174,13 @@ U0 Main(I32 argc, U8 **argv) {
     PrintAllJokes(ctx);
   } else if (StrCmp(operation, "delete") == 0) {
     DeleteJoke(ctx, argv[3], argv[4]);
+  } else if (StrCmp(operation, "about") == 0) {
+    PrintAboutSection(argc, argv);
+  } else if (StrCmp(operation, "help") == 0) {
+    PrintHelpSection(argc, argv);
+  } else {
+    PrintHelpSection(argc, argv);
+    Panic("Invalid operation: %s\n", operation);
   }
 
   SqlCtxRelease(ctx);
