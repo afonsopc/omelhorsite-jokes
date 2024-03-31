@@ -125,6 +125,7 @@ const checkAdmin = async (c: Context, next: () => Promise<void>) => {
 }
 
 const app = new Hono()
+
 app.use("/*", cors())
 
 app.get("/", async (c) => { return c.text("Dizem que o fado desgraça\nO fado de muita gente\nMentira, o fado não passa\nDum fado que qualquer sente", 200) })
