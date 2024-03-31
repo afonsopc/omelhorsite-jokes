@@ -1,7 +1,9 @@
 #define SQL_TEXT 3
 
 U0 Panic(U8 *fmt,...) {
-  U8 *msg = StrPrintJoin(NULL,fmt,argc,argv);
+  U8 *error = "ERROR: %s";
+  U8 *msg = StrPrintJoin(NULL, error, fmt);
+  msg = StrPrintJoin(NULL,msg,argc,argv);
   "%s\n", msg;
   Free(msg);
   Exit(1);
@@ -58,7 +60,7 @@ U8 *GetOperationFromArgs(I32 argc, U8 **argv) {
     StrCmp(argv[2], "createdb") != 0 &&
     StrCmp(argv[2], "healthcheck") != 0
   ) {
-    Panic("Invalid operation: %s\n", argv[2]);
+    Panic("Invalid operation: %s", argv[2]);
   } else if (StrCmp(argv[2], "add") == 0 && argc < 4) {
     Panic("Usage:\n %s <db_path> add <lang> <joke>", argv[0]);
   } else if (StrCmp(argv[2], "delete") == 0 && argc < 4) {
@@ -85,7 +87,7 @@ U0 CreateTableJokes(SqlCtx *ctx) {
        joke TEXT
      );"
   );
-  if (err) Panic("Failed to create the jokes table: %s\n",err);
+  if (err) Panic("Failed to create the jokes table: %s",err);
 }
 
 U0 AddJoke(SqlCtx *ctx, U8 *lang, U8 *joke) {
@@ -100,7 +102,7 @@ U0 AddJoke(SqlCtx *ctx, U8 *lang, U8 *joke) {
   params[1].str = joke;
 
   Bool success = SqlQuery(ctx, query, params, 2);
-  if (!success) Panic("Failed to add joke to database\n");
+  if (!success) Panic("Failed to add joke to database");
 
   "Joke added successfully.\n";
 }
@@ -172,7 +174,7 @@ U0 DeleteJoke(SqlCtx *ctx, U8 *lang, U8 *joke) {
   params[1].str = joke;
 
   Bool success = SqlQuery(ctx, query, params, 2);
-  if (!success) Panic("Failed to delete joke from database.\n");
+  if (!success) Panic("Failed to delete joke from database.");
 
   "Joke deleted successfully.\n";
 }
@@ -181,7 +183,7 @@ U0 DeleteAllJokes(SqlCtx *ctx) {
   U8 *query = "DELETE FROM jokes;";
 
   Bool success = SqlQuery(ctx, query);
-  if (!success) Panic("Failed to delete all jokes from database.\n");
+  if (!success) Panic("Failed to delete all jokes from database.");
 
   "All jokes deleted successfully.\n";
 }
@@ -205,7 +207,7 @@ U0 Main(I32 argc, U8 **argv) {
   U8 *db_path = GetDatabasePathFromArgs(argc, argv);
 
   auto ctx = SqlCtxNew(db_path);
-  if (!ctx) Panic("Failed to create database: %s\n", db_path);
+  if (!ctx) Panic("Failed to create database: %s", db_path);
 
   CreateTableJokes(ctx);
 
@@ -229,7 +231,7 @@ U0 Main(I32 argc, U8 **argv) {
     PrintHealthCheckSection();
   } else {
     PrintHelpSection(argc, argv);
-    Panic("Invalid operation: %s\n", operation);
+    Panic("Invalid operation: %s", operation);
   }
 
   SqlCtxRelease(ctx);

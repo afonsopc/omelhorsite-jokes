@@ -18,10 +18,10 @@ RUN bun install --frozen-lockfile --production
 
 FROM debian:trixie-slim as execute
 
-ENV JOKES_BINARY "/app/bin/jokes.sh"
+ENV JOKES_BINARY "/app/bin/jokes"
 ENV PORT "3000"
 ENV MAX_STRING_LENGTH "255"
-ENV JOKES_DB_PATH "/app/database/jokes.db"
+ENV JOKES_DB_PATH "/app/db/jokes.db"
 
 RUN apt-get update ; apt-get upgrade -y
 RUN apt-get install -y curl unzip
@@ -54,16 +54,7 @@ COPY --from=bun-build /code/node_modules /app/api/node_modules
 COPY --from=bun-build /code/src/ /app/api/src/
 COPY --from=bun-build /code/package.json /app/api/package.json
 
-# Create the script to use the jokes binary emulated or if it is x86_64 use the binary
-RUN echo "#!/bin/bash" > /app/bin/jokes.sh
-RUN echo "if [ \"\$(uname -m)\" != \"x86_64\" ]; then" >> /app/bin/jokes.sh
-RUN echo "  qemu-amd64 -L /lib64 /app/bin/jokes" >> /app/bin/jokes.sh
-RUN echo "else" >> /app/bin/jokes.sh
-RUN echo "  /app/bin/jokes" >> /app/bin/jokes.sh
-RUN echo "fi" >> /app/bin/jokes.sh
-RUN chmod +x /app/bin/jokes.sh
-
-# Copy the lib64 directory
+# Copy the lib64 directory for emulation on non-x86_64 platforms
 COPY jokes-manager/lib64 /lib64
 
 WORKDIR /app/api

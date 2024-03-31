@@ -1,4 +1,5 @@
 import { Context, Hono } from "hono"
+import { cors } from "hono/cors"
 
 type Joke = {
   lang: string,
@@ -8,8 +9,8 @@ type Joke = {
 type Jokes = { jokes: Joke[] }
 
 type JokeManagerResponse = {
-  sucess: boolean,
-  stdout: ReadableStream<Uint8Array>
+  success: boolean,
+  output: string
 }
 
 const getEnvironmentVariable = (name: string): string => {
@@ -18,7 +19,16 @@ const getEnvironmentVariable = (name: string): string => {
   return value
 }
 
-const JOKES_BINARY = getEnvironmentVariable("JOKES_BINARY")
+const ERROR_MESSAGE = "ERROR";
+
+const _JOKES_BINARY = getEnvironmentVariable("JOKES_BINARY")
+
+// if arch is not amd64 add qemu-amd64 to the command
+const JOMES_MANAGER = [_JOKES_BINARY]
+if (process.arch !== "x64") {
+  JOMES_MANAGER.unshift("qemu-amd64")
+}
+
 const JOKES_DB_PATH = getEnvironmentVariable("JOKES_DB_PATH")
 const ACCOUNTS_SERVICE_URL = getEnvironmentVariable("ACCOUNTS_SERVICE_URL")
 const _MAX_STRING_LENGTH = getEnvironmentVariable("MAX_STRING_LENGTH")
@@ -51,29 +61,35 @@ function isJokes(obj: any): obj is Jokes {
 
 const runJokesManager = async (_args: (string | undefined)[]): Promise<JokeManagerResponse> => {
   const args = _args.filter((arg) => arg !== undefined) as string[];
-  const response = Bun.spawn([JOKES_BINARY, JOKES_DB_PATH, ...args]);
+  const command_args = [...JOMES_MANAGER, JOKES_DB_PATH, ...args]
+  const response = Bun.spawn(command_args);
+  const output = await new Response(response.stdout).text()
+  const success = !output.startsWith(ERROR_MESSAGE)
 
-  console.log(await new Response(response.stdout).text());
+  console.log(`Executed command: "${command_args.join(" ")}"; Success: "${success}"; Output: "${output}";`)
 
-  return {
-    sucess: response.exitCode === 0,
-    stdout: response.stdout
-  };
+  return { success, output };
 }
 
 const getJoke = async (preferredLang?: string): Promise<Joke> => {
   const response = await runJokesManager(["get", preferredLang]);
-  const joke: Joke = await new Response(response.stdout).json()
 
-  if (response.sucess && isJoke(joke)) { return joke }
+  let joke: Joke;
+  try { joke = JSON.parse(response.output) }
+  catch (e) { throw new Error("Failed to parse joke") }
+
+  if (response.success && isJoke(joke)) { return joke }
   else { throw new Error("Recieved an invalid joke format") }
 }
 
 const getAllJokes = async (): Promise<Jokes> => {
   const response = await runJokesManager(["getall"]);
-  const joke: Jokes = await new Response(response.stdout).json()
 
-  if (response.sucess && isJokes(joke)) { return joke }
+  let joke: Joke;
+  try { joke = JSON.parse(response.output) }
+  catch (e) { throw new Error("Failed to parse joke") }
+
+  if (response.success && isJokes(joke)) { return joke }
   else { throw new Error("Recieved an invalid joke format") }
 }
 
@@ -81,7 +97,7 @@ const addJoke = async (joke: Joke): Promise<void> => {
   const cleanedJoke: Joke = cleanJoke(joke);
   const response = await runJokesManager(["add", `${cleanedJoke.lang}`, `${cleanedJoke.joke}`]);
 
-  if (response.sucess) { return }
+  if (response.success) { return }
   else { throw new Error("Failed to add joke") }
 }
 
@@ -89,7 +105,7 @@ const deleteJoke = async (joke: Joke): Promise<void> => {
   const cleanedJoke: Joke = cleanJoke(joke);
   const response = await runJokesManager(["delete", `${cleanedJoke.lang}`, `${cleanedJoke.joke}`]);
 
-  if (response.sucess) { return }
+  if (response.success) { return }
   else { throw new Error("Failed to delete joke") }
 }
 
@@ -109,6 +125,7 @@ const checkAdmin = async (c: Context, next: () => Promise<void>) => {
 }
 
 const app = new Hono()
+app.use("/*", cors())
 
 app.get("/", async (c) => { return c.text("Dizem que o fado desgraça\nO fado de muita gente\nMentira, o fado não passa\nDum fado que qualquer sente", 200) })
 
