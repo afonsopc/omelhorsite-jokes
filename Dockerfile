@@ -13,8 +13,17 @@ RUN if [ "$(uname -m)" != "x86_64" ]; then \
   fi
 
 # Install bun
-COPY install_bun.sh .
-RUN chmod +x install_bun.sh && ./install_bun.sh
+RUN useradd -m user
+USER user
+WORKDIR /home/user
+RUN curl https://bun.sh/install -o install-bun.sh
+RUN chmod +x install-bun.sh
+RUN ./install-bun.sh
+USER root
+RUN rm install-bun.sh
+RUN mv /home/user/.bun/bin/bun /usr/bin/bun
+RUN userdel user
+RUN rm -rf /home/user
 
 
 FROM holy-base AS build-holy
