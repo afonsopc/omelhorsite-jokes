@@ -1,6 +1,31 @@
 FROM oven/bun:1 as bun-base
 FROM --platform=linux/amd64 afonsopc/holy-c as holy-base
 
+
+FROM debian:trixie-slim as runtime
+
+# Install the necessary dependencies
+RUN apt-get update
+RUN apt-get install -y curl unzip
+
+RUN if [ "$(uname -m)" != "x86_64" ]; then \
+  apt-get install -y qemu-user; \
+  fi
+
+# Install bun
+RUN useradd -m user
+USER user
+WORKDIR /home/user
+RUN curl https://bun.sh/install -o install-bun.sh
+RUN chmod +x install-bun.sh
+RUN ./install-bun.sh
+USER root
+RUN rm install-bun.sh
+RUN mv /home/user/.bun/bin/bun /usr/bin/bun
+RUN userdel user
+RUN rm -rf /home/user
+
+
 FROM holy-base AS build-holy
 
 WORKDIR /code
@@ -16,32 +41,12 @@ COPY jokes-api/ .
 RUN bun install --frozen-lockfile --production
 
 
-FROM debian:trixie-slim as execute
+FROM runtime
 
 ENV JOKES_BINARY "/app/bin/jokes"
 ENV PORT "3000"
 ENV MAX_STRING_LENGTH "255"
 ENV JOKES_DB_PATH "/app/db/jokes.db"
-
-RUN apt-get update ; apt-get upgrade -y
-RUN apt-get install -y curl unzip
-
-RUN if [ "$(uname -m)" != "x86_64" ]; then \
-      apt-get install -y qemu-user; \
-    fi
-
-# Install bun
-RUN useradd -m user
-USER user
-WORKDIR /home/user
-RUN curl https://bun.sh/install -o install-bun.sh
-RUN chmod +x install-bun.sh
-RUN ./install-bun.sh
-USER root
-RUN rm install-bun.sh
-RUN mv /home/user/.bun/bin/bun /usr/bin/bun
-RUN userdel user
-RUN rm -rf /home/user
 
 WORKDIR /app
 

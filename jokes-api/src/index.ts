@@ -10,7 +10,8 @@ type Jokes = { jokes: Joke[] }
 
 type JokeManagerResponse = {
   success: boolean,
-  output: string
+  stdout: string
+  stderr: string
 }
 
 const getEnvironmentVariable = (name: string): string => {
@@ -60,22 +61,39 @@ function isJokes(obj: any): obj is Jokes {
 }
 
 const runJokesManager = async (_args: (string | undefined)[]): Promise<JokeManagerResponse> => {
-  const args = _args.filter((arg) => arg !== undefined) as string[];
-  const command_args = [...JOMES_MANAGER, JOKES_DB_PATH, ...args]
-  const response = Bun.spawn(command_args);
-  const output = await new Response(response.stdout).text()
-  const success = !output.startsWith(ERROR_MESSAGE)
+  let success = false;
+  let stdout = ""
+  let stderr = ""
+  let iterations = 0;
+  let maxIterations = 5;
 
-  console.log(`Executed command: "${command_args.join(" ")}"; Success: "${success}"; Output: "${output}";`)
+  while (!success) {
+    if (iterations >= maxIterations) {
+      success = false;
+      break;
+    }
 
-  return { success, output };
+    if (iterations > 0) { await new Promise((r) => setTimeout(r, 1000)) }
+    iterations++;
+
+    const args = _args.filter((arg) => arg !== undefined) as string[];
+    const command_args = [...JOMES_MANAGER, JOKES_DB_PATH, ...args]
+    const response = Bun.spawn(command_args);
+    stdout = await new Response(response.stdout).text()
+    stderr = await new Response(response.stderr).text()
+    success = stderr.length === 0 && !stdout.startsWith(ERROR_MESSAGE) && stdout.length > 0
+
+    console.log(`Executed command: "${command_args}"; Success: "${success}"; stdout: "${stdout}"; stderr: "${stderr}"`)
+  };
+
+  return { success, stdout, stderr };
 }
 
 const getJoke = async (preferredLang?: string): Promise<Joke> => {
   const response = await runJokesManager(["get", preferredLang]);
 
   let joke: Joke;
-  try { joke = JSON.parse(response.output) }
+  try { joke = JSON.parse(response.stdout) }
   catch (e) { throw new Error("Failed to parse joke") }
 
   if (response.success && isJoke(joke)) { return joke }
@@ -85,11 +103,11 @@ const getJoke = async (preferredLang?: string): Promise<Joke> => {
 const getAllJokes = async (): Promise<Jokes> => {
   const response = await runJokesManager(["getall"]);
 
-  let joke: Joke;
-  try { joke = JSON.parse(response.output) }
-  catch (e) { throw new Error("Failed to parse joke") }
+  let jokes: Jokes;
+  try { jokes = JSON.parse(response.stdout) }
+  catch (e) { throw new Error("Failed to parse jokes") }
 
-  if (response.success && isJokes(joke)) { return joke }
+  if (response.success && isJokes(jokes)) { return jokes }
   else { throw new Error("Recieved an invalid joke format") }
 }
 
@@ -162,7 +180,7 @@ app.post("/joke", checkAdmin, async (c) => {
   }
 
   try {
-    addJoke(joke);
+    await addJoke(joke);
     return c.text("Joke added successfully", 201)
   }
   catch (e) {
@@ -172,15 +190,17 @@ app.post("/joke", checkAdmin, async (c) => {
 })
 
 app.delete("/joke", checkAdmin, async (c) => {
-  let joke;
-  try { joke = await c.req.json<Joke>() }
-  catch (e) {
-    console.error(e)
-    return c.text("Invalid joke format", 400)
+  const jokeLang = c.req.query("lang");
+  const jokeText = c.req.query("joke");
+
+  if (!jokeLang || !jokeText || typeof jokeLang !== "string" || typeof jokeText !== "string") {
+    return c.text("Missing joke parameters", 400);
   }
 
+  const joke: Joke = { lang: jokeLang.toString(), joke: jokeText.toString() };
+
   try {
-    deleteJoke(joke);
+    await deleteJoke(joke);
     return c.text("Joke deleted successfully", 200)
   }
   catch (e) {

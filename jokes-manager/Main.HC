@@ -158,7 +158,7 @@ U0 PrintAllJokes(SqlCtx *ctx) {
     "\n ]\n";
     "}\n";
   } else {
-    "[]\n";
+    Panic("Failed to get all jokes from database.");
   }
 }
 
@@ -206,7 +206,7 @@ U0 Main(I32 argc, U8 **argv) {
   U8 *operation = GetOperationFromArgs(argc, argv);
   U8 *db_path = GetDatabasePathFromArgs(argc, argv);
 
-  auto ctx = SqlCtxNew(db_path);
+  auto ctx = SqlCtxNew(db_path, TRUE);
   if (!ctx) Panic("Failed to create database: %s", db_path);
 
   CreateTableJokes(ctx);
