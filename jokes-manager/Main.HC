@@ -75,7 +75,7 @@ U8 *GetDatabasePathFromArgs(I32 argc, U8 **argv) {
 }
 
 U8 *FormatJokeToJson(U8 *lang, U8 *joke) {
-  U8 *json = StrPrint(NULL,"{\"lang\": \"%s\", \"joke\": \"%s\"}",lang,joke);
+  U8 *json = StrPrint(NULL,"{\"lang\": \"%Q\", \"joke\": \"%Q\"}",lang,joke);
   return json;
 }
 

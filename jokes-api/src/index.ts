@@ -1,5 +1,6 @@
 import { Context, Hono } from "hono"
 import { cors } from "hono/cors"
+import { logger } from 'hono/logger'
 
 type Joke = {
   lang: string,
@@ -37,6 +38,8 @@ const MAX_STRING_LENGTH = parseInt(_MAX_STRING_LENGTH)
 
 const cleanString = (str: string): string => {
   if (!str) { return "" }
+  if (typeof str !== "string") { return "" }
+
   let cleanStr = str.trim()
   if (cleanStr.length > MAX_STRING_LENGTH) {
     cleanStr = cleanStr.substring(0, MAX_STRING_LENGTH)
@@ -46,10 +49,14 @@ const cleanString = (str: string): string => {
 }
 
 const cleanJoke = (joke: Joke): Joke => {
-  return {
+  const cleanedJoke = {
     lang: cleanString(joke.lang),
     joke: cleanString(joke.joke)
   }
+
+  console.log(`Cleaned joke from ${JSON.stringify(joke)} to ${JSON.stringify(cleanedJoke)}`)
+
+  return cleanedJoke
 }
 
 function isJoke(obj: any): obj is Joke {
@@ -145,6 +152,7 @@ const checkAdmin = async (c: Context, next: () => Promise<void>) => {
 const app = new Hono()
 
 app.use("/*", cors())
+app.use(logger())
 
 app.get("/", async (c) => { return c.text("Dizem que o fado desgraça\nO fado de muita gente\nMentira, o fado não passa\nDum fado que qualquer sente", 200) })
 
