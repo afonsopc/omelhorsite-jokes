@@ -26,9 +26,9 @@ const ERROR_MESSAGE = "ERROR";
 const _JOKES_BINARY = getEnvironmentVariable("JOKES_BINARY")
 
 // if arch is not amd64 add qemu-amd64 to the command
-const JOMES_MANAGER = [_JOKES_BINARY]
+const JOKES_MANAGER = [_JOKES_BINARY]
 if (process.arch !== "x64") {
-  JOMES_MANAGER.unshift("qemu-amd64")
+  JOKES_MANAGER.unshift("qemu-amd64")
 }
 
 const JOKES_DB_PATH = getEnvironmentVariable("JOKES_DB_PATH")
@@ -84,7 +84,7 @@ const runJokesManager = async (_args: (string | undefined)[]): Promise<JokeManag
     iterations++;
 
     const args = _args.filter((arg) => arg !== undefined) as string[];
-    const command_args = [...JOMES_MANAGER, JOKES_DB_PATH, ...args]
+    const command_args = [...JOKES_MANAGER, JOKES_DB_PATH, ...args]
     const response = Bun.spawn(command_args);
     stdout = await new Response(response.stdout).text()
     stderr = await new Response(response.stderr).text()

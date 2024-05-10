@@ -124,12 +124,14 @@ U0 PrintRandomJoke(SqlCtx *ctx, U8 *pref_lang) {
       auto rand_joke = row.col[1].str;
       U8 *json = FormatJokeToJson(rand_joke_lang, rand_joke);
       "%s\n", json;
+      Free(json);
       return;
     }
   }
 
   U8 *json = FormatJokeToJson("en", "No jokes available.");
   "%s\n", json;
+  Free(json);
 }
 
 U0 PrintAllJokes(SqlCtx *ctx) {
@@ -150,10 +152,12 @@ U0 PrintAllJokes(SqlCtx *ctx) {
       auto joke_text = row.col[1].str;
       U8 *json = FormatJokeToJson(joke_lang, joke_text);
       "   %s", json;
+      Free(json);
     }
     if (row_count == 0) {
       U8 *json = FormatJokeToJson("en", "No jokes available.");
       "   %s", json;
+      Free(json);
     }
     "\n ]\n";
     "}\n";
